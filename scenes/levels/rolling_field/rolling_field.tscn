@@ -4,27 +4,42 @@
 [ext_resource type="PackedScene" path="res://scenes/ball/sticky_ball.tscn" id="2_ball"]
 [ext_resource type="PackedScene" path="res://scenes/camera/top_down_camera.tscn" id="3_camera"]
 [ext_resource type="Shader" path="res://scenes/levels/rolling_field/field_ground.gdshader" id="4_ground"]
+[ext_resource type="Texture2D" path="res://assets/textures/ground/grass_albedo.png" id="5_grass_albedo"]
+[ext_resource type="Texture2D" path="res://assets/textures/ground/grass_normal.png" id="6_grass_normal"]
+[ext_resource type="Texture2D" path="res://assets/textures/ground/grass_roughness.png" id="7_grass_rough"]
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
-sky_top_color = Color(0.36, 0.56, 0.86, 1)
-sky_horizon_color = Color(0.72, 0.8, 0.9, 1)
-ground_bottom_color = Color(0.3, 0.38, 0.3, 1)
-ground_horizon_color = Color(0.72, 0.8, 0.9, 1)
+[sub_resource type="PhysicalSkyMaterial" id="PhysicalSkyMaterial_sky"]
+ground_color = Color(0.22, 0.26, 0.16, 1)
 
 [sub_resource type="Sky" id="Sky_main"]
-sky_material = SubResource("ProceduralSkyMaterial_sky")
+sky_material = SubResource("PhysicalSkyMaterial_sky")
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 2
 sky = SubResource("Sky_main")
 ambient_light_source = 3
-tonemap_mode = 2
+reflected_light_source = 2
+tonemap_mode = 4
+tonemap_exposure = 1.1
 ssao_enabled = true
+ssao_radius = 1.5
+ssao_intensity = 1.6
+ssil_enabled = true
 glow_enabled = true
+glow_intensity = 0.3
+glow_bloom = 0.05
+fog_enabled = true
+fog_light_color = Color(0.62, 0.7, 0.82, 1)
+fog_density = 0.0006
+fog_aerial_perspective = 0.7
+fog_sky_affect = 0.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ground"]
 render_priority = 0
 shader = ExtResource("4_ground")
+shader_parameter/grass_albedo = ExtResource("5_grass_albedo")
+shader_parameter/grass_normal = ExtResource("6_grass_normal")
+shader_parameter/grass_roughness = ExtResource("7_grass_rough")
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
 material = SubResource("ShaderMaterial_ground")
@@ -42,7 +57,11 @@ environment = SubResource("Environment_main")
 [node name="Sun" type="DirectionalLight3D" parent="."]
 unique_name_in_owner = true
 transform = Transform3D(0.866, -0.383, 0.3214, 0, 0.6428, 0.766, -0.5, -0.6634, 0.5567, 0, 10, 0)
+light_color = Color(1, 0.96, 0.88, 1)
+light_energy = 1.3
 shadow_enabled = true
+shadow_blur = 1.5
+directional_shadow_blend_splits = true
 
 [node name="Ground" type="StaticBody3D" parent="."]
 collision_mask = 0

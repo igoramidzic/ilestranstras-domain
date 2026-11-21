@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scenes/ball/sticky_ball.gd" id="1_ball"]
 [ext_resource type="Shader" path="res://scenes/ball/sticky_ball.gdshader" id="2_shader"]
-[ext_resource type="PackedScene" path="res://assets/models/characters/player.blend" id="3_model"]
+[ext_resource type="PackedScene" path="res://assets/models/characters/hero.blend" id="3_model"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_ball"]
 radius = 0.4

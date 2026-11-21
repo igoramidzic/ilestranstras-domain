@@ -53,8 +53,16 @@ const SETTLE_TIME := 0.15
 ## Radians per pixel when turning with right-mouse drag.
 @export var mouse_turn_sensitivity: float = 0.006
 
+@export_group("Walk cycle")
+## Meters covered per step (left or right), at the character's base size.
+@export var stride_length: float = 0.7
+## How far the thighs swing forward/back (radians).
+@export var hip_swing: float = 0.5
+## How far the knee bends while that foot swings forward (radians).
+@export var knee_bend: float = 0.9
+
 @export_group("Pusher")
-## Character size at the starting ball size (1 = the model's own 1.8 m).
+## Character size at the starting ball size (1 = the model's own 1.75 m).
 @export var pusher_base_scale: float = 0.55
 ## The character grows with (radius / start_radius) ^ this, a bit slower than the
 ## ball, so the ball ends up towering over them.
@@ -67,7 +75,11 @@ var items_collected: int = 0
 var heading_yaw: float = 0.0
 
 var _volume: float
-var _walk_time: float = 0.0
+## 0..TAU through one full walk cycle (a left step and a right step).
+var _walk_phase: float = 0.0
+## 0..1, how much of the walk animation is showing. Eases in and out.
+var _walk_amount: float = 0.0
+var _last_feet_position: Vector3
 var _bump_cooldown: float = 0.0
 var _mouse_turn: float = 0.0
 var _query := PhysicsShapeQueryParameters3D.new()
@@ -80,6 +92,9 @@ var _stuck: Array[StuckItem] = []
 @onready var _core: MeshInstance3D = %Core
 @onready var _pusher: Node3D = %Pusher
 @onready var _pusher_model: Node3D = %PusherModel
+## Leg pieces from hero.blend (thigh pivots at the hip, shin at the knee).
+@onready var _thighs: Array[Node3D] = [_find_part("ThighL"), _find_part("ThighR")]
+@onready var _shins: Array[Node3D] = [_find_part("ShinL"), _find_part("ShinR")]
 
 
 class StuckItem:
@@ -103,6 +118,7 @@ func _ready() -> void:
 		camera.manual_rotation = false
 		camera.snap_yaw(heading_yaw)
 	_set_radius(start_radius)
+	_last_feet_position = _pusher.global_position
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -143,7 +159,7 @@ func _physics_process(delta: float) -> void:
 	_handle_collisions(speed_before / top_speed)
 	_absorb_touching()
 	_settle_items(delta)
-	_update_pusher(moved.length() / maxf(delta, 0.0001), absf(turn), delta)
+	_update_pusher(delta)
 
 
 ## Flat direction the character is facing (and pushing toward).
@@ -248,20 +264,57 @@ func _set_radius(new_radius: float) -> void:
 
 
 ## Keeps the character behind the ball, hands on it, facing the heading.
-func _update_pusher(speed: float, turning: float, delta: float) -> void:
+func _update_pusher(delta: float) -> void:
 	var pusher_scale := pusher_base_scale * pow(radius / start_radius, pusher_scale_exponent)
-	# Stand so the hands (about chest height) touch the ball's surface.
-	var hand_height := minf(0.9 * pusher_scale, radius)
+	# Stand so the hands touch the ball's surface. In hero.blend the hands are
+	# 1.24 m up and 0.55 m in front of the body's center.
+	var hand_height := minf(1.24 * pusher_scale, radius)
 	var reach := sqrt(maxf(radius * radius - pow(radius - hand_height, 2.0), 0.0))
-	_pusher.position = -get_forward() * (reach + 0.4 * pusher_scale)
+	_pusher.position = -get_forward() * (reach + 0.5 * pusher_scale)
 	_pusher.rotation.y = heading_yaw
 	_pusher.scale = Vector3.ONE * pusher_scale
 
-	# A little bounce and lean while walking (turning in place counts as walking).
-	var walk := clampf(maxf(speed / get_top_speed(), turning * 0.6), 0.0, 1.0)
-	_walk_time += delta * (4.0 + 8.0 * walk) * walk
-	_pusher_model.position.y = absf(sin(_walk_time * PI)) * 0.08 * walk
-	_pusher_model.rotation.x = -0.25 * walk
+	_update_walk(pusher_scale, delta)
+
+
+## Swings the legs in step with how far the feet actually moved this frame,
+## whether from rolling forward, backing up or circling the ball to turn.
+func _update_walk(pusher_scale: float, delta: float) -> void:
+	var feet := _pusher.global_position
+	var step := feet - _last_feet_position
+	_last_feet_position = feet
+	step.y = 0.0
+	var feet_speed := step.length() / maxf(delta, 0.0001)
+	if feet_speed > 200.0:
+		feet_speed = 0.0 # A jump, e.g. the ball suddenly grew. Not walking.
+
+	var stride := stride_length * pusher_scale
+	# Half a cycle per stride, so the feet don't slide on the ground.
+	_walk_phase = fmod(_walk_phase + feet_speed / stride * PI * delta, TAU)
+	var target := clampf(feet_speed / (stride * 2.0), 0.0, 1.0)
+	_walk_amount = lerpf(_walk_amount, target, 1.0 - exp(-8.0 * delta))
+	if _walk_amount < 0.01 and target == 0.0:
+		# Settle the feet together when stopping, instead of freezing mid-step.
+		_walk_phase = lerpf(_walk_phase, roundf(_walk_phase / PI) * PI, 0.1)
+
+	var swing := sin(_walk_phase)
+	var swing_speed := cos(_walk_phase)
+	for i: int in 2:
+		var side := 1.0 if i == 0 else -1.0
+		# Negative X rotation swings a leg forward. The legs move in opposition.
+		if _thighs[i]:
+			_thighs[i].rotation.x = -side * swing * hip_swing * _walk_amount
+		if _shins[i]:
+			# Bend the knee while that leg swings forward, so the foot clears the ground.
+			_shins[i].rotation.x = maxf(0.0, side * swing_speed) * knee_bend * _walk_amount
+
+	# Body dips as the legs spread and rises as they pass, plus a lean into the push.
+	_pusher_model.position.y = -absf(swing) * 0.035 * _walk_amount
+	_pusher_model.rotation.x = -0.2 * _walk_amount
+
+
+func _find_part(part_name: String) -> Node3D:
+	return _pusher_model.find_child(part_name, true, false) as Node3D
 
 
 static func _sphere_volume(r: float) -> float:

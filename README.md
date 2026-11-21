@@ -29,8 +29,9 @@ The camera is third person: it sits behind the character and always faces where 
 | Pause | Esc or P |
 
 Tuning knobs are exported on the `Ball` node in `rolling_field.tscn` (pickup ratio, growth,
-speed, turn speed, character size) and `TIERS` in `rolling_field.gd` (how many things of each
-size spawn where).
+speed, turn speed, character size, walk cycle) and `TIERS` in `rolling_field.gd` (how many things
+of each size spawn where). Which kinds of things appear at which sizes is `KINDS_BY_SIZE` in
+`item_catalog.gd`.
 
 ## Sandbox controls
 
@@ -65,11 +66,15 @@ scenes/
   sandbox/            Throwaway demo level                                           (delete me)
 assets/
   models/             .blend files, imported by Godot directly
-  audio/  textures/  fonts/   (create these as you need them)
+    items/            items.blend: every pick-up item (Kind_variant objects) + textures/
+    characters/       hero.blend: the character who pushes the ball (legs are separate,
+                      jointed pieces for the walk cycle) + textures/; player.blend: sandbox placeholder
+  textures/ground/    Tiling lawn textures used by the field's ground shader
+  audio/  fonts/      (create these as you need them)
 resources/
   audio/default_bus_layout.tres   Audio buses: Master, Music, SFX
   theme/main_theme.tres           UI look (buttons, panels, label sizes)
-tools/blender/        Python script that generated the placeholder models (ignored by Godot)
+tools/blender/        Python scripts that generate the models and textures (ignored by Godot)
 ```
 
 ## How it fits together
@@ -118,6 +123,32 @@ The project warns about untyped declarations, which catches bugs early and speed
   FileSystem dock to open the Advanced Import Settings.
 - `tools/blender/build_placeholder_models.py` regenerates the placeholder models and **overwrites**
   them. Don't run it after you've hand-edited them.
+
+### The detailed models (items, hero, grass)
+
+`tools/blender/build_item_models.py` builds `items.blend`, `hero.blend` and the ground textures
+from scratch (about 10 seconds). Everything is procedural: shapes are built in Python, and the PBR
+textures (wood grain, bark, brick, roof tiles, leaves, ...) come from `item_textures.py` and are
+written as PNGs into a `textures/` folder next to each `.blend`. It **overwrites** those files,
+so if you hand-edit a model in Blender, stop regenerating it (or remove it from the script).
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python tools/blender/build_item_models.py
+```
+
+To look at the results without opening Godot, render a contact sheet:
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender --background assets/models/items/items.blend --python tools/blender/render_item_previews.py -- items.png
+```
+
+- Add a new **variant** of an existing kind by adding an object named `<Kind>_<Something>` to
+  `items.blend` (by hand or in the script). The game picks it up automatically.
+- Add a new **kind** the same way, then list it in `KINDS_BY_SIZE` (and optionally `FILL`) in
+  `scenes/levels/rolling_field/item_catalog.gd`.
+- Trees, bushes and plants use alpha-cutout leaf cards, so their materials are double-sided.
+- The hero's legs (`ThighL/R` pivoting at the hips, `ShinL/R` at the knees) are child objects, so
+  `StickyBall` can swing them in step with how far the feet move.
 
 ## Removing the sandbox
 

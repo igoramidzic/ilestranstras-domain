@@ -109,6 +109,8 @@ func _spawn_tier(count: int, min_size: float, max_size: float, inner: float, out
 	for i: int in count:
 		var size := exp(randf_range(log(min_size), log(max_size)))
 		var item := _catalog.make_item(size)
+		if item == null:
+			continue
 		var footprint := Vector2(item.extents.x, item.extents.z).length() * 0.5
 		var point: Variant = _find_spot(footprint, inner, outer)
 		if point == null:
