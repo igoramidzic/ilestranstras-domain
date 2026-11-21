@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/camera/top_down_camera.gd" id="1_camera"]
+
+[node name="TopDownCamera" type="Node3D"]
+physics_interpolation_mode = 2
+script = ExtResource("1_camera")
+
+[node name="Pivot" type="Node3D" parent="."]
+unique_name_in_owner = true
+
+[node name="Camera" type="Camera3D" parent="Pivot"]
+unique_name_in_owner = true
+current = true
+fov = 50.0
+far = 300.0
