@@ -9,7 +9,7 @@ signal paused_changed(is_paused: bool)
 const MAIN_MENU_SCENE := "res://scenes/ui/main_menu.tscn"
 ## The scene the "Play" button loads. Point this at your first real level
 ## once you delete the sandbox (see README.md).
-const GAMEPLAY_SCENE := "res://scenes/sandbox/sandbox.tscn"
+const GAMEPLAY_SCENE := "res://scenes/levels/rolling_field/rolling_field.tscn"
 ## Auto-pause when the game window loses focus (alt-tab). Turn off if it gets
 ## in your way while debugging with the editor side by side.
 const PAUSE_ON_FOCUS_LOSS := true

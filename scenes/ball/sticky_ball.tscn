@@ -1,0 +1,48 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/ball/sticky_ball.gd" id="1_ball"]
+[ext_resource type="Shader" path="res://scenes/ball/sticky_ball.gdshader" id="2_shader"]
+[ext_resource type="PackedScene" path="res://assets/models/characters/player.blend" id="3_model"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_ball"]
+radius = 0.4
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ball"]
+render_priority = 0
+shader = ExtResource("2_shader")
+
+[sub_resource type="SphereMesh" id="SphereMesh_core"]
+material = SubResource("ShaderMaterial_ball")
+radius = 1.0
+height = 2.0
+radial_segments = 32
+rings = 16
+
+[node name="StickyBall" type="CharacterBody3D"]
+collision_layer = 2
+collision_mask = 5
+script = ExtResource("1_ball")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("SphereShape3D_ball")
+
+[node name="Roller" type="Node3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+
+[node name="Core" type="MeshInstance3D" parent="Roller"]
+unique_name_in_owner = true
+transform = Transform3D(0.4, 0, 0, 0, 0.4, 0, 0, 0, 0.4, 0, 0, 0)
+mesh = SubResource("SphereMesh_core")
+
+[node name="Pusher" type="Node3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.8)
+
+[node name="PusherModel" type="Node3D" parent="Pusher"]
+unique_name_in_owner = true
+
+[node name="Model" parent="Pusher/PusherModel" instance=ExtResource("3_model")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)

@@ -12,7 +12,29 @@
    - **F8** stops the game.
    - Errors and `print()` output show in the **Output** / **Debugger** panels at the bottom.
 
-## Controls
+## The game: rolling field
+
+**Play** loads `scenes/levels/rolling_field/`. You push a sticky ball around a field. Anything
+whose longest side is at most **half the ball's diameter** sticks to it, and the ball grows.
+Anything bigger is a solid obstacle until you're big enough. Small things are near the start,
+houses and towers near the walls. Reach a 10 m ball to hit the goal (you can keep rolling).
+
+The camera is third person: it sits behind the character and always faces where they face.
+
+| Action | Keys |
+| --- | --- |
+| Roll forward / back | W / S (up / down arrows) |
+| Turn (the character walks around the ball, the camera follows) | A / D, Q / E, or hold right mouse and drag |
+| Zoom | Mouse wheel |
+| Pause | Esc or P |
+
+Tuning knobs are exported on the `Ball` node in `rolling_field.tscn` (pickup ratio, growth,
+speed, turn speed, character size) and `TIERS` in `rolling_field.gd` (how many things of each
+size spawn where).
+
+## Sandbox controls
+
+The old sandbox (`scenes/sandbox/sandbox.tscn`, run it with F6) uses the top-down `Player`:
 
 | Action | Keys |
 | --- | --- |
@@ -38,6 +60,8 @@ scenes/
   ui/                 Main menu, settings menu, pause menu
   camera/             TopDownCamera: follow, rotate, zoom, "what's under the mouse"   (keep)
   player/             Player: camera-relative movement, faces the cursor             (keep)
+  ball/               StickyBall (roll, pick up, grow, character pushes it) + Collectible
+  levels/rolling_field/   The game level, its ground shader and ItemCatalog (builds the things to pick up)
   sandbox/            Throwaway demo level                                           (delete me)
 assets/
   models/             .blend files, imported by Godot directly
@@ -56,7 +80,7 @@ which applies saved settings before anything is drawn. Then the main scene
 
 ```
 Splash ──▶ Main Menu ──Play──▶ Gameplay scene (Game.GAMEPLAY_SCENE)
-              ▲    └─Settings      │ Esc
+              ▲    └─Settings      │ Esc   (currently the rolling field)
               │                    ▼
               └────Main Menu─── Pause Menu ──Resume──▶ back to gameplay
                                    └─Settings / Quit

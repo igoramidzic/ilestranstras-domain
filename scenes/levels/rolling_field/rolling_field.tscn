@@ -1,0 +1,149 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/levels/rolling_field/rolling_field.gd" id="1_level"]
+[ext_resource type="PackedScene" path="res://scenes/ball/sticky_ball.tscn" id="2_ball"]
+[ext_resource type="PackedScene" path="res://scenes/camera/top_down_camera.tscn" id="3_camera"]
+[ext_resource type="Shader" path="res://scenes/levels/rolling_field/field_ground.gdshader" id="4_ground"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
+sky_top_color = Color(0.36, 0.56, 0.86, 1)
+sky_horizon_color = Color(0.72, 0.8, 0.9, 1)
+ground_bottom_color = Color(0.3, 0.38, 0.3, 1)
+ground_horizon_color = Color(0.72, 0.8, 0.9, 1)
+
+[sub_resource type="Sky" id="Sky_main"]
+sky_material = SubResource("ProceduralSkyMaterial_sky")
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 2
+sky = SubResource("Sky_main")
+ambient_light_source = 3
+tonemap_mode = 2
+ssao_enabled = true
+glow_enabled = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ground"]
+render_priority = 0
+shader = ExtResource("4_ground")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
+material = SubResource("ShaderMaterial_ground")
+size = Vector2(600, 600)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
+size = Vector3(600, 1, 600)
+
+[node name="RollingField" type="Node3D"]
+script = ExtResource("1_level")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_main")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(0.866, -0.383, 0.3214, 0, 0.6428, 0.766, -0.5, -0.6634, 0.5567, 0, 10, 0)
+shadow_enabled = true
+
+[node name="Ground" type="StaticBody3D" parent="."]
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="Ground"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_ground")
+
+[node name="Mesh" type="MeshInstance3D" parent="Ground"]
+mesh = SubResource("PlaneMesh_ground")
+
+[node name="Items" type="Node3D" parent="."]
+unique_name_in_owner = true
+
+[node name="Ball" parent="." node_paths=PackedStringArray("camera") instance=ExtResource("2_ball")]
+unique_name_in_owner = true
+camera = NodePath("../CameraRig")
+
+[node name="CameraRig" parent="." node_paths=PackedStringArray("target") instance=ExtResource("3_camera")]
+unique_name_in_owner = true
+target = NodePath("../Ball")
+min_distance = 2.5
+max_distance = 8.0
+start_distance = 4.0
+zoom_step = 0.75
+pitch_near = -24.0
+pitch_far = -42.0
+rotate_smoothing = 8.0
+
+[node name="BlipPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+max_polyphony = 4
+bus = &"SFX"
+
+[node name="BonkPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+bus = &"SFX"
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="Margin" type="MarginContainer" parent="HUD"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="Stats" type="VBoxContainer" parent="HUD/Margin"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+mouse_filter = 2
+
+[node name="SizeLabel" type="Label" parent="HUD/Margin/Stats"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HeaderLabel"
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.6)
+theme_override_constants/outline_size = 6
+text = "80 cm"
+
+[node name="CountLabel" type="Label" parent="HUD/Margin/Stats"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.6)
+theme_override_constants/outline_size = 5
+text = "Things: 0"
+
+[node name="ToastLabel" type="Label" parent="HUD/Margin"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+theme_type_variation = &"HeaderLabel"
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.6)
+theme_override_constants/outline_size = 6
+horizontal_alignment = 1
+
+[node name="GoalLabel" type="Label" parent="HUD/Margin"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_type_variation = &"HeaderLabel"
+theme_override_colors/font_color = Color(1, 0.88, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.7)
+theme_override_constants/outline_size = 8
+horizontal_alignment = 1
+
+[node name="HintLabel" type="Label" parent="HUD/Margin"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 8
+theme_override_colors/font_color = Color(1, 1, 1, 0.75)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.6)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 16
+text = "W/S roll  ·  A/D, Q/E or RMB-drag turn  ·  pick up things up to half the ball's size  ·  wheel zoom  ·  Esc pause"
+horizontal_alignment = 1
